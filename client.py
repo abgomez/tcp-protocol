@@ -8,19 +8,20 @@ from select import *
 from socket import *
 
 #Global variables
-filename = 0                                         #file to process
+filename = ""                                        #file to process
 debug = 0                                            #verbose mode default off
 sockNames = {}                                       #map sockets to name
 nextClientNumber = 0                                 #each client is assigned a unique id
 liveClients = set()                                  #set of live clients
 deadClients = set()                                  #set of dead clients
+mode = 'u'                                           #client mode, get or put file
 
 #map socket:object
 def lookupSocknames(socks):
     return [ sockName(s) for s in socks ]
 
 #client class
-#the class will create an object of type client, and it will handle the functions
+#the class will create an object of type client, it will handle the functions
 #to communicate with the server.
 class Client:
     def __init__(self, af, socktype, saddr):
@@ -43,19 +44,31 @@ class Client:
         liveClients.add(self)
     def doSend(self):
         try:
+            #detect mode of operations
+            if mode == 'g':
+                    message = "get:"+filename
+                    if debug:
+                        print "Message to Server: %s" % message
+                    self.numSent += self.serverSocket.send(message)
+                    self.allSent = 1
+                    self.serverSocket.shutdown(SHUT_WR)
             #open file
-            if debug:
-                print "Sending file: %s" % filename
-            sendFile = open(filename)
-            readFile = sendFile.read(1024)
-            while readFile:
+            #if debug:
+            #    print "Sending file: %s" % filename
+            #sendFile = open(filename)
+            #readFile = sendFile.read(1024)
+            #while readFile:
                 #print readFile
-                self.numSent += self.serverSocket.send(readFile)
-                readFile = sendFile.read(1024)
-                time.sleep (1)
-            sendFile.close()
-            self.allSent = 1
-            self.serverSocket.shutdown(SHUT_WR)
+            #    self.numSent += self.serverSocket.send(readFile)
+        #        readFile = sendFile.read(1024)
+        #        time.sleep (1)
+        #    sendFile.close()
+        #    self.allSent = 1
+        #    self.serverSocket.shutdown(SHUT_WR)
+
+            #if not os.path.exists(fileName):
+            #    print "Input File does not exists in current directory: %s" % fileName
+            #    sys.exit(1)
             #self.numSent += self.serverSocket.send("a"*(random.randrange(1,2048)))
         except Exception as e:
             self.errorAbort("can't send: %s" % e)
@@ -65,24 +78,33 @@ class Client:
             self.serverSocket.shutdown(SHUT_WR)
     def doRecv(self):
         try:
-            n = len(self.serverSocket.recv(1024))
-            #print n
+            serverMessage = self.serverSocket.recv(1024)
+            if debug:
+                print "\n\nMessage received: %s" % serverMessage
+            #figure out what type of message we got
+            typeMsg = serverMessage[0:3]
+            if typeMsg == 'err':
+                self.errorAbort("Incorrect File Requested")
+            n = len(serverMessage)
         except Exception as e:
             print "doRecv on dead socket"
             print e
             self.done()
             return
         self.numRecv += n
-        if self.numRecv > self.numSent:
-            self.errorAbort("sent=%d < recd=%d" %  (self.numSent, self.numRecv))
+        #if self.numRecv > self.numSent:
+        #    self.errorAbort("sent=%d < recd=%d" %  (self.numSent, self.numRecv))
         if n != 0:
             return
         if debug: print "client %d: zero length read" % self.clientIndex
         # zero length read (done)
-        if self.numRecv == self.numSent:
-            self.done()
-        else:
-            self.errorAbort("sent=%d but recd=%d" %  (self.numSent, self.numRecv))
+        self.done()
+        #if self.numRecv == self.numSent:
+        #    self.done()
+        #if self.numRecv == 8080:
+        #    self.done()
+        #else:
+        #    self.errorAbort("sent=%d but recd=%d" %  (self.numSent, self.numRecv))
     def doErr(self, msg=""):
         error("socket error")
     def checkWrite(self):
@@ -98,7 +120,7 @@ class Client:
     def done(self):
         self.isDone = 1
         self.allSent =1
-        if self.numSent != self.numRecv: self.error = 1
+        #if self.numSent != self.numRecv: self.error = 1
         try:
             self.serverSocket(close)
         except:
@@ -107,7 +129,6 @@ class Client:
         deadClients.add(self)
         try: liveClients.remove(self)
         except: pass
-
     def errorAbort(self, msg):
         self.allSent =1
         self.error = 1
@@ -161,8 +182,10 @@ if args.debug:
     debug = 1
 if args.get:
     filename = args.get
+    mode = 'g'
 else:
     filename = args.put
+    mode = 'p'
 if debug:
     print "Proccessing File: %s" % filename
     print "Server at: %s , port: %d" % ( serverAddr[0], serverAddr[1] )
