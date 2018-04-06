@@ -29,11 +29,34 @@ Message's Lenght | : | Type | : | Text Lengt | : | Text
 ---------------- | -- | ---- | ---| ---------- | -- | ----------
 24 | : | get | : | 16 | : | declaration.txt
 
+### Running Examples:
+To run the TCP protocol you need to execute all objects,
+* First you need to start the server and proxy. 
+* `pyhton stammerProxy.py -d`
+* `cd server` and then `python server.py -d`
 
+* Then you need to execute the client. 
+* `cd ../`
+* `pythong client.py -d -g declaration.txt`
 
+The following images shows our client sending a file to the server, the communication between the client and server goes through the stammer proxy. 
+![Example](https://github.com/s18-nets/s18-nets-tcp-file-transfer-abgomez/blob/master/images/working.PNG)
+
+#### Multiple clients sending a file. 
+![Multiple Clients](https://github.com/s18-nets/s18-nets-tcp-file-transfer-abgomez/blob/master/images/multipleFiles.PNG)
+
+### Test Script.
+We created a test script [Test Script](https://github.com/s18-nets/s18-nets-tcp-file-transfer-abgomez/blob/master/testTCP.sh) which can help to reduce the testing setup, the script runs all neccesary objetcs to transfer files. The test script requires three arguments: actio, filename, and number of client. For the test script to properly work all three arguments must be present. 
+
+#### How to run the test script
+`./testTCP.sh <action> <filename> <number of client>`
+
+#### Example
+`./testTCP.sh put declaration.txt 1`
+![State Diagram](https://github.com/s18-nets/s18-nets-tcp-file-transfer-abgomez/blob/master/images/testScript.PNG)
 
 ## State Diagram
-
+![State Diagram](https://github.com/s18-nets/s18-nets-tcp-file-transfer-abgomez/blob/master/images/StateDiagram.png)
 
 
 # Lab Instructions.
